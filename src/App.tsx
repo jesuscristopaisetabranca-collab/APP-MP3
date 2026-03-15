@@ -26,11 +26,18 @@ import { motion, AnimatePresence } from 'motion/react';
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 const VOICES = [
-  { id: 'Kore', name: 'Kore', desc: 'Professional & Clear', gender: 'Female' },
-  { id: 'Puck', name: 'Puck', desc: 'Energetic & Bright', gender: 'Male' },
-  { id: 'Charon', name: 'Charon', desc: 'Deep & Authoritative', gender: 'Male' },
-  { id: 'Fenrir', name: 'Fenrir', desc: 'Classic Narrator', gender: 'Male' },
-  { id: 'Zephyr', name: 'Zephyr', desc: 'Soft & Intimate', gender: 'Female' },
+  { id: 'Kore', name: 'Kore', desc: 'Profissional e Clara', gender: 'Female' },
+  { id: 'Puck', name: 'Puck', desc: 'Enérgico e Brilhante', gender: 'Male' },
+  { id: 'Charon', name: 'Charon', desc: 'Profundo e Autoritário', gender: 'Male' },
+  { id: 'Fenrir', name: 'Fenrir', desc: 'Narrador Clássico', gender: 'Male' },
+  { id: 'Zephyr', name: 'Zephyr', desc: 'Suave e Íntimo', gender: 'Female' },
+];
+
+const BG_MUSIC_PRESETS = [
+  { id: 'none', name: 'Sem Música', url: '' },
+  { id: 'ambient', name: 'Piano Ambiente', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3' },
+  { id: 'cinematic', name: 'Cinematográfico', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3' },
+  { id: 'lofi', name: 'Lo-Fi Relaxante', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
 ];
 
 export default function App() {
@@ -38,10 +45,13 @@ export default function App() {
   const [voice, setVoice] = useState('Kore');
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [bgMusicUrl, setBgMusicUrl] = useState<string>('');
+  const [bgVolume, setBgVolume] = useState(0.2);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'editor' | 'export'>('editor');
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const bgMusicRef = useRef<HTMLAudioElement>(null);
 
   const sanitizeText = () => {
     let cleaned = text
@@ -54,9 +64,32 @@ export default function App() {
     setText(cleaned);
   };
 
+  const handleMusicUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setBgMusicUrl(url);
+    }
+  };
+
+  const togglePlayback = () => {
+    if (audioRef.current && bgMusicRef.current) {
+      if (audioRef.current.paused) {
+        audioRef.current.play();
+        if (bgMusicUrl) {
+          bgMusicRef.current.volume = bgVolume;
+          bgMusicRef.current.play();
+        }
+      } else {
+        audioRef.current.pause();
+        bgMusicRef.current.pause();
+      }
+    }
+  };
+
   const generateNarration = async () => {
     if (!text.trim()) {
-      setError("Please enter some text first.");
+      setError("Por favor, insira algum texto primeiro.");
       return;
     }
 
@@ -68,7 +101,7 @@ export default function App() {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Narrate this book snippet with a professional tone: ${text}` }] }],
+        contents: [{ parts: [{ text: `Narre este trecho de livro com um tom profissional: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -85,11 +118,11 @@ export default function App() {
         const url = URL.createObjectURL(blob);
         setAudioUrl(url);
       } else {
-        throw new Error("No audio data received from AI.");
+        throw new Error("Nenhum dado de áudio recebido da IA.");
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to generate narration.");
+      setError(err.message || "Falha ao gerar narração.");
     } finally {
       setIsGenerating(false);
     }
@@ -120,17 +153,17 @@ export default function App() {
           >
             <div className="flex items-center gap-4 mb-6">
               <span className="px-3 py-1 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-full">
-                AI Powered
+                Potencializado por IA
               </span>
               <span className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">
-                Book to Shorts Ecosystem
+                Ecossistema de Livros para Shorts
               </span>
             </div>
             <h1 className="text-[12vw] lg:text-[10vw] font-black leading-[0.85] tracking-tighter uppercase mb-4">
               Lumina<span className="text-emerald-500">.</span>
             </h1>
             <p className="max-w-xl text-lg text-white/60 font-medium leading-relaxed">
-              Transform literary masterpieces into captivating short-form content. Professional narration, automated processing, and cinematic subtitles.
+              Transforme obras-primas literárias em conteúdo cativante de formato curto. Narração profissional, processamento automatizado e legendas cinematográficas.
             </p>
           </motion.div>
         </div>
@@ -144,14 +177,14 @@ export default function App() {
               onClick={() => setActiveTab('editor')}
               className={`text-sm font-bold uppercase tracking-widest transition-all relative py-2 ${activeTab === 'editor' ? 'text-white' : 'text-white/30 hover:text-white/60'}`}
             >
-              01. Studio
+              01. Estúdio
               {activeTab === 'editor' && <motion.div layoutId="nav-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />}
             </button>
             <button 
               onClick={() => setActiveTab('export')}
               className={`text-sm font-bold uppercase tracking-widest transition-all relative py-2 ${activeTab === 'export' ? 'text-white' : 'text-white/30 hover:text-white/60'}`}
             >
-              02. Export & Build
+              02. Exportar e Criar
               {activeTab === 'export' && <motion.div layoutId="nav-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />}
             </button>
           </div>
@@ -178,13 +211,13 @@ export default function App() {
               <div className="lg:col-span-8 space-y-12">
                 <div className="space-y-6">
                   <div className="flex items-end justify-between border-b border-white/10 pb-4">
-                    <h2 className="text-4xl font-bold tracking-tight italic font-serif">The Manuscript</h2>
+                    <h2 className="text-4xl font-bold tracking-tight italic font-serif">O Manuscrito</h2>
                     <button 
                       onClick={sanitizeText}
                       className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-all"
                     >
                       <Wand2 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                      Sanitize PDF Text
+                      Limpar Texto de PDF
                     </button>
                   </div>
                   
@@ -192,7 +225,7 @@ export default function App() {
                     <textarea 
                       value={text}
                       onChange={(e) => setText(e.target.value)}
-                      placeholder="Paste your excerpt here. Let the AI breathe life into your words..."
+                      placeholder="Cole seu trecho aqui. Deixe a IA dar vida às suas palavras..."
                       className="w-full h-[500px] bg-transparent text-2xl font-serif leading-relaxed outline-none resize-none placeholder:text-white/5 selection:bg-emerald-500/20"
                     />
                     <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#050505] to-transparent pointer-events-none" />
@@ -204,7 +237,7 @@ export default function App() {
               <div className="lg:col-span-4 space-y-12">
                 <div className="space-y-8">
                   <div className="space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30">Voice Selection</h3>
+                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30">Seleção de Voz</h3>
                     <div className="grid gap-3">
                       {VOICES.map((v) => (
                         <button
@@ -230,6 +263,60 @@ export default function App() {
                     </div>
                   </div>
 
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30">Música de Fundo</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {BG_MUSIC_PRESETS.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setBgMusicUrl(m.url)}
+                          className={`p-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                            bgMusicUrl === m.url 
+                              ? 'bg-emerald-500 border-emerald-500 text-black' 
+                              : 'bg-white/2 border-white/5 text-white/40 hover:border-white/20'
+                          }`}
+                        >
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        accept="audio/*" 
+                        onChange={handleMusicUpload}
+                        className="hidden" 
+                        id="music-upload" 
+                      />
+                      <label 
+                        htmlFor="music-upload"
+                        className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-white/10 text-[10px] font-bold uppercase tracking-widest text-white/40 hover:border-emerald-500/50 hover:text-emerald-500 cursor-pointer transition-all"
+                      >
+                        <Download className="w-3 h-3 rotate-180" />
+                        Upload de Trilha Personalizada
+                      </label>
+                    </div>
+
+                    {bgMusicUrl && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-white/20">
+                          <span>Volume da Música</span>
+                          <span>{Math.round(bgVolume * 100)}%</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="1" 
+                          step="0.01" 
+                          value={bgVolume}
+                          onChange={(e) => setBgVolume(parseFloat(e.target.value))}
+                          className="w-full h-1 bg-white/5 rounded-full appearance-none accent-emerald-500 cursor-pointer"
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-6">
                     <button 
                       onClick={generateNarration}
@@ -242,7 +329,7 @@ export default function App() {
                         ) : (
                           <>
                             <Volume2 className="w-5 h-5" />
-                            Cast Voice
+                            Gerar Voz
                           </>
                         )}
                       </div>
@@ -263,17 +350,40 @@ export default function App() {
                         className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-6"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Master Audio</span>
-                          <a 
-                            href={audioUrl} 
-                            download="narration.mp3"
-                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download
-                          </a>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Áudio Master</span>
+                          <div className="flex gap-4">
+                            <button 
+                              onClick={togglePlayback}
+                              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-colors"
+                            >
+                              Prévia do Mix
+                            </button>
+                            <a 
+                              href={audioUrl} 
+                              download="narration.mp3"
+                              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-colors"
+                            >
+                              <Download className="w-4 h-4" />
+                              Baixar
+                            </a>
+                          </div>
                         </div>
-                        <audio ref={audioRef} src={audioUrl} controls className="w-full h-10 invert brightness-200 opacity-60" />
+                        <audio 
+                          ref={audioRef} 
+                          src={audioUrl} 
+                          className="w-full h-10 invert brightness-200 opacity-60" 
+                          onPlay={() => { if(bgMusicRef.current && bgMusicUrl) bgMusicRef.current.play() }}
+                          onPause={() => { if(bgMusicRef.current) bgMusicRef.current.pause() }}
+                          onEnded={() => { if(bgMusicRef.current) bgMusicRef.current.pause() }}
+                        />
+                        {bgMusicUrl && (
+                          <audio 
+                            ref={bgMusicRef} 
+                            src={bgMusicUrl} 
+                            loop 
+                            className="hidden" 
+                          />
+                        )}
                       </motion.div>
                     )}
                   </div>
@@ -288,13 +398,31 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="max-w-4xl mx-auto space-y-24"
             >
+              {/* Quick Export Section */}
+              {audioUrl && (
+                <div className="p-8 bg-emerald-500/5 border border-emerald-500/20 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="space-y-2 text-center md:text-left">
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">Pronto para Exportar</h3>
+                    <p className="text-sm text-white/40 uppercase tracking-widest">Sua narração foi processada e está pronta para o mix final.</p>
+                  </div>
+                  <a 
+                    href={audioUrl} 
+                    download="narration.mp3"
+                    className="flex items-center gap-3 px-8 py-4 bg-emerald-500 text-black font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                  >
+                    <Download className="w-5 h-5" />
+                    Baixar Narração (MP3)
+                  </a>
+                </div>
+              )}
+
               {/* Step 1: Local Processor */}
               <div className="grid md:grid-cols-2 gap-16 items-start">
                 <div className="space-y-6">
-                  <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Phase 01</div>
-                  <h2 className="text-5xl font-black tracking-tighter uppercase leading-[0.9]">Local Video Engine</h2>
+                  <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Fase 01</div>
+                  <h2 className="text-5xl font-black tracking-tighter uppercase leading-[0.9]">Motor de Vídeo Local</h2>
                   <p className="text-lg text-white/40 leading-relaxed">
-                    Render cinematic 9:16 videos with synchronized subtitles using our Python-based processing engine.
+                    Renderize vídeos cinematográficos 9:16 com legendas sincronizadas usando nosso motor de processamento em Python.
                   </p>
                   <div className="flex flex-wrap gap-4">
                     <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest">MoviePy</span>
@@ -308,7 +436,7 @@ export default function App() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
                         <Code2 className="w-5 h-5 text-emerald-500" />
-                        Installation
+                        Instalação
                       </div>
                       <div className="bg-black p-4 rounded-xl font-mono text-xs text-emerald-400 group relative">
                         <code>pip install moviepy openai-whisper torch</code>
@@ -324,9 +452,9 @@ export default function App() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
                         <ArrowRight className="w-5 h-5 text-emerald-500" />
-                        Run Processor
+                        Executar Processador
                       </div>
-                      <p className="text-xs text-white/40">Place <code className="text-white/60">narration.mp3</code> and <code className="text-white/60">cover.jpg</code> in the same folder as <code className="text-white/60">processor.py</code>.</p>
+                      <p className="text-xs text-white/40">Coloque <code className="text-white/60">narration.mp3</code>, <code className="text-white/60">cover.jpg</code>, e o opcional <code className="text-white/60">music.mp3</code> na mesma pasta que o <code className="text-white/60">processor.py</code>.</p>
                       <div className="bg-black p-4 rounded-xl font-mono text-xs text-emerald-400 group relative">
                         <code>python processor.py</code>
                         <button 
@@ -344,10 +472,10 @@ export default function App() {
               {/* Step 2: Backend Export */}
               <div className="grid md:grid-cols-2 gap-16 items-start pt-24 border-t border-white/10">
                 <div className="space-y-6">
-                  <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Phase 02</div>
-                  <h2 className="text-5xl font-black tracking-tighter uppercase leading-[0.9]">Cloud Backend</h2>
+                  <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Fase 02</div>
+                  <h2 className="text-5xl font-black tracking-tighter uppercase leading-[0.9]">Backend na Nuvem</h2>
                   <p className="text-lg text-white/40 leading-relaxed">
-                    Deploy your own Flask-based API to Vercel for remote narration generation and text sanitization.
+                    Implante sua própria API baseada em Flask na Vercel para geração remota de narração e limpeza de texto.
                   </p>
                   <a 
                     href="https://vercel.com/new" 
@@ -355,7 +483,7 @@ export default function App() {
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-500 hover:underline"
                   >
-                    Deploy to Vercel <ExternalLink className="w-4 h-4" />
+                    Implantar na Vercel <ExternalLink className="w-4 h-4" />
                   </a>
                 </div>
 
@@ -367,10 +495,10 @@ export default function App() {
                         main.py (Flask)
                       </div>
                       <button 
-                        onClick={() => copyToClipboard("# Flask code here...")}
+                        onClick={() => copyToClipboard("# Código Flask aqui...")}
                         className="text-[10px] font-bold uppercase tracking-widest text-white/20 hover:text-white"
                       >
-                        Copy Code
+                        Copiar Código
                       </button>
                     </div>
                     <div className="bg-black p-4 rounded-xl font-mono text-[10px] text-white/40 h-40 overflow-y-auto">
@@ -402,14 +530,14 @@ def generate():
       <footer className="max-w-7xl mx-auto px-6 py-32 border-t border-white/10">
         <div className="grid md:grid-cols-2 gap-12 items-end">
           <div className="space-y-6">
-            <h2 className="text-2xl font-black uppercase tracking-tighter">Lumina Ecosystem</h2>
+            <h2 className="text-2xl font-black uppercase tracking-tighter">Ecossistema Lumina</h2>
             <p className="max-w-xs text-xs text-white/20 leading-relaxed uppercase tracking-widest">
-              A complete toolchain for modern content creators. Built with precision and powered by the frontier of artificial intelligence.
+              Uma cadeia de ferramentas completa para criadores de conteúdo modernos. Construída com precisão e potencializada pela fronteira da inteligência artificial.
             </p>
           </div>
           <div className="text-right space-y-2">
             <div className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">© 2026 Lumina AI</div>
-            <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/40">All Rights Reserved</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/40">Todos os direitos reservados</div>
           </div>
         </div>
       </footer>
