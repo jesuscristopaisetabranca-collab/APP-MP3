@@ -52,6 +52,7 @@ export default function App() {
   const [bgMusicUrl, setBgMusicUrl] = useState<string>('');
   const [bgVolume, setBgVolume] = useState(0.2);
   const [speechRate, setSpeechRate] = useState(1.0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'editor' | 'export' | 'manual'>('editor');
   
@@ -85,9 +86,11 @@ export default function App() {
           bgMusicRef.current.volume = bgVolume;
           bgMusicRef.current.play();
         }
+        setIsPlaying(true);
       } else {
         audioRef.current.pause();
         bgMusicRef.current.pause();
+        setIsPlaying(false);
       }
     }
   };
@@ -395,7 +398,7 @@ export default function App() {
                               onClick={togglePlayback}
                               className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-colors"
                             >
-                              Prévia do Mix
+                              {isPlaying ? 'Pausar Prévia' : 'Ouvir Prévia'}
                             </button>
                             <a 
                               href={audioUrl} 
@@ -407,22 +410,6 @@ export default function App() {
                             </a>
                           </div>
                         </div>
-                        <audio 
-                          ref={audioRef} 
-                          src={audioUrl} 
-                          className="w-full h-10 invert brightness-200 opacity-60" 
-                          onPlay={() => { if(bgMusicRef.current && bgMusicUrl) bgMusicRef.current.play() }}
-                          onPause={() => { if(bgMusicRef.current) bgMusicRef.current.pause() }}
-                          onEnded={() => { if(bgMusicRef.current) bgMusicRef.current.pause() }}
-                        />
-                        {bgMusicUrl && (
-                          <audio 
-                            ref={bgMusicRef} 
-                            src={bgMusicUrl} 
-                            loop 
-                            className="hidden" 
-                          />
-                        )}
                       </motion.div>
                     )}
                   </div>
@@ -444,14 +431,36 @@ export default function App() {
                     <h3 className="text-2xl font-black uppercase tracking-tighter">Pronto para Exportar</h3>
                     <p className="text-sm text-white/40 uppercase tracking-widest">Sua narração foi processada e está pronta para o mix final.</p>
                   </div>
-                  <a 
-                    href={audioUrl} 
-                    download="narration.mp3"
-                    className="flex items-center gap-3 px-8 py-4 bg-emerald-500 text-black font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
-                  >
-                    <Download className="w-5 h-5" />
-                    Baixar Narração (MP3)
-                  </a>
+                  <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    <button 
+                      onClick={togglePlayback}
+                      className="flex items-center justify-center gap-3 px-8 py-4 bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/10 transition-all"
+                    >
+                      {isPlaying ? (
+                        <>
+                          <div className="flex gap-1 items-center h-4">
+                            <motion.div animate={{ height: [4, 16, 4] }} transition={{ repeat: Infinity, duration: 0.5 }} className="w-1 bg-emerald-500" />
+                            <motion.div animate={{ height: [16, 4, 16] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.1 }} className="w-1 bg-emerald-500" />
+                            <motion.div animate={{ height: [8, 16, 8] }} transition={{ repeat: Infinity, duration: 0.5, delay: 0.2 }} className="w-1 bg-emerald-500" />
+                          </div>
+                          Pausar
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-5 h-5" />
+                          Ouvir Narração
+                        </>
+                      )}
+                    </button>
+                    <a 
+                      href={audioUrl} 
+                      download="narration.mp3"
+                      className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-500 text-black font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+                    >
+                      <Download className="w-5 h-5" />
+                      Baixar (MP3)
+                    </a>
+                  </div>
                 </div>
               )}
 
@@ -684,6 +693,31 @@ def generate():
           </div>
         </div>
       </footer>
+
+      {/* Persistent Audio Elements */}
+      <audio 
+        ref={audioRef} 
+        src={audioUrl || ''} 
+        className="hidden" 
+        onPlay={() => { 
+          setIsPlaying(true);
+          if(bgMusicRef.current && bgMusicUrl) bgMusicRef.current.play();
+        }}
+        onPause={() => { 
+          setIsPlaying(false);
+          if(bgMusicRef.current) bgMusicRef.current.pause();
+        }}
+        onEnded={() => { 
+          setIsPlaying(false);
+          if(bgMusicRef.current) bgMusicRef.current.pause();
+        }}
+      />
+      <audio 
+        ref={bgMusicRef} 
+        src={bgMusicUrl || ''} 
+        loop 
+        className="hidden" 
+      />
     </div>
   );
 }
