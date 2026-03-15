@@ -697,7 +697,7 @@ def generate():
       {/* Persistent Audio Elements */}
       <audio 
         ref={audioRef} 
-        src={audioUrl || ''} 
+        src={audioUrl || undefined} 
         className="hidden" 
         onPlay={() => { 
           setIsPlaying(true);
@@ -714,7 +714,7 @@ def generate():
       />
       <audio 
         ref={bgMusicRef} 
-        src={bgMusicUrl || ''} 
+        src={bgMusicUrl || undefined} 
         loop 
         className="hidden" 
       />
