@@ -11,14 +11,14 @@ import {
   Volume2, 
   Download, 
   FileText, 
-  Trash2, 
   Settings2,
-  Play,
-  Pause,
   CheckCircle2,
   AlertCircle,
-  Terminal,
-  Copy
+  Copy,
+  ExternalLink,
+  Code2,
+  ChevronRight,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -26,11 +26,11 @@ import { motion, AnimatePresence } from 'motion/react';
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
 const VOICES = [
-  { id: 'Kore', name: 'Kore (Professional)', gender: 'Female' },
-  { id: 'Puck', name: 'Puck (Energetic)', gender: 'Male' },
-  { id: 'Charon', name: 'Charon (Deep)', gender: 'Male' },
-  { id: 'Fenrir', name: 'Fenrir (Narrator)', gender: 'Male' },
-  { id: 'Zephyr', name: 'Zephyr (Soft)', gender: 'Female' },
+  { id: 'Kore', name: 'Kore', desc: 'Professional & Clear', gender: 'Female' },
+  { id: 'Puck', name: 'Puck', desc: 'Energetic & Bright', gender: 'Male' },
+  { id: 'Charon', name: 'Charon', desc: 'Deep & Authoritative', gender: 'Male' },
+  { id: 'Fenrir', name: 'Fenrir', desc: 'Classic Narrator', gender: 'Male' },
+  { id: 'Zephyr', name: 'Zephyr', desc: 'Soft & Intimate', gender: 'Female' },
 ];
 
 export default function App() {
@@ -39,23 +39,18 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'editor' | 'instructions'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'export'>('editor');
   
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const sanitizeText = () => {
     let cleaned = text
-      // Remove line breaks that don't look like paragraph ends
       .replace(/([^\.\!\?\n])\n([a-z])/g, '$1 $2')
-      // Remove hyphens at line ends
       .replace(/(\w)-\n(\w)/g, '$1$2')
-      // Remove page numbers (common patterns like "Page 123" or just "123" on a line)
       .replace(/^\d+$/gm, '')
       .replace(/Page \d+/gi, '')
-      // Normalize whitespace
       .replace(/\s+/g, ' ')
       .trim();
-    
     setText(cleaned);
   };
 
@@ -105,277 +100,318 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#e5e5e5] font-sans selection:bg-emerald-500/30">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/40 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <BookOpen className="text-black w-6 h-6" />
+    <div className="min-h-screen bg-[#050505] text-[#f0f0f0] font-sans selection:bg-emerald-500/40">
+      {/* Editorial Hero Section */}
+      <section className="relative h-[60vh] flex flex-col justify-end px-6 pb-12 overflow-hidden border-b border-white/10">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-10" />
+          <img 
+            src="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=2000" 
+            className="w-full h-full object-cover grayscale"
+            alt="Library background"
+          />
+        </div>
+        
+        <div className="max-w-7xl mx-auto w-full relative z-20">
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <span className="px-3 py-1 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-full">
+                AI Powered
+              </span>
+              <span className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">
+                Book to Shorts Ecosystem
+              </span>
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Lumina</h1>
-              <p className="text-[10px] uppercase tracking-widest text-emerald-500 font-semibold">Book to Shorts</p>
-            </div>
-          </div>
-          
-          <nav className="flex gap-1 bg-white/5 p-1 rounded-lg">
+            <h1 className="text-[12vw] lg:text-[10vw] font-black leading-[0.85] tracking-tighter uppercase mb-4">
+              Lumina<span className="text-emerald-500">.</span>
+            </h1>
+            <p className="max-w-xl text-lg text-white/60 font-medium leading-relaxed">
+              Transform literary masterpieces into captivating short-form content. Professional narration, automated processing, and cinematic subtitles.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Navigation Rail */}
+      <nav className="sticky top-0 z-50 bg-[#050505]/80 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex gap-8">
             <button 
               onClick={() => setActiveTab('editor')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'editor' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
+              className={`text-sm font-bold uppercase tracking-widest transition-all relative py-2 ${activeTab === 'editor' ? 'text-white' : 'text-white/30 hover:text-white/60'}`}
             >
-              Editor
+              01. Studio
+              {activeTab === 'editor' && <motion.div layoutId="nav-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />}
             </button>
             <button 
-              onClick={() => setActiveTab('instructions')}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'instructions' ? 'bg-white/10 text-white shadow-sm' : 'text-white/40 hover:text-white/60'}`}
+              onClick={() => setActiveTab('export')}
+              className={`text-sm font-bold uppercase tracking-widest transition-all relative py-2 ${activeTab === 'export' ? 'text-white' : 'text-white/30 hover:text-white/60'}`}
             >
-              Video Script
+              02. Export & Build
+              {activeTab === 'export' && <motion.div layoutId="nav-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />}
             </button>
-          </nav>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-4 text-[10px] font-bold text-white/20 uppercase tracking-widest">
+            <span>v2.5 Flash</span>
+            <div className="w-1 h-1 rounded-full bg-white/10" />
+            <span>Whisper AI</span>
+          </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-12">
+      <main className="max-w-7xl mx-auto px-6 py-20">
         <AnimatePresence mode="wait">
           {activeTab === 'editor' ? (
             <motion.div 
               key="editor"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="grid lg:grid-cols-3 gap-8"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="grid lg:grid-cols-12 gap-16"
             >
-              {/* Left Column: Input */}
-              <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden focus-within:border-emerald-500/50 transition-colors">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/2">
-                    <div className="flex items-center gap-2 text-xs font-medium text-white/60">
-                      <FileText className="w-4 h-4" />
-                      BOOK SNIPPET
-                    </div>
+              {/* Editor Section */}
+              <div className="lg:col-span-8 space-y-12">
+                <div className="space-y-6">
+                  <div className="flex items-end justify-between border-b border-white/10 pb-4">
+                    <h2 className="text-4xl font-bold tracking-tight italic font-serif">The Manuscript</h2>
                     <button 
                       onClick={sanitizeText}
-                      className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-emerald-500 hover:text-emerald-400 transition-colors"
+                      className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-all"
                     >
-                      <Wand2 className="w-3 h-3" />
-                      Clean PDF Text
+                      <Wand2 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                      Sanitize PDF Text
                     </button>
                   </div>
-                  <textarea 
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Paste your book excerpt here..."
-                    className="w-full h-[400px] bg-transparent p-6 outline-none resize-none text-lg leading-relaxed placeholder:text-white/10"
-                  />
-                  <div className="px-4 py-2 bg-white/2 border-t border-white/10 flex justify-between items-center text-[10px] text-white/40 uppercase tracking-widest">
-                    <span>{text.length} characters</span>
-                    <span>{text.split(/\s+/).filter(Boolean).length} words</span>
+                  
+                  <div className="relative group">
+                    <textarea 
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      placeholder="Paste your excerpt here. Let the AI breathe life into your words..."
+                      className="w-full h-[500px] bg-transparent text-2xl font-serif leading-relaxed outline-none resize-none placeholder:text-white/5 selection:bg-emerald-500/20"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#050505] to-transparent pointer-events-none" />
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Controls */}
-              <div className="space-y-6">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6">
+              {/* Controls Section */}
+              <div className="lg:col-span-4 space-y-12">
+                <div className="space-y-8">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-xs font-medium text-white/60 uppercase tracking-wider">
-                      <Settings2 className="w-4 h-4" />
-                      Voice Settings
-                    </div>
-                    
-                    <div className="grid gap-2">
+                    <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30">Voice Selection</h3>
+                    <div className="grid gap-3">
                       {VOICES.map((v) => (
                         <button
                           key={v.id}
                           onClick={() => setVoice(v.id)}
-                          className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                          className={`group flex items-center justify-between p-5 rounded-2xl border transition-all duration-500 ${
                             voice === v.id 
-                              ? 'bg-emerald-500/10 border-emerald-500 text-white' 
-                              : 'bg-white/2 border-white/5 text-white/60 hover:border-white/20'
+                              ? 'bg-emerald-500 border-emerald-500 text-black' 
+                              : 'bg-white/2 border-white/5 text-white/40 hover:border-white/20'
                           }`}
                         >
                           <div className="text-left">
-                            <div className="text-sm font-semibold">{v.name}</div>
-                            <div className="text-[10px] opacity-60">{v.gender}</div>
+                            <div className="text-lg font-bold tracking-tight leading-none mb-1">{v.name}</div>
+                            <div className={`text-[10px] font-bold uppercase tracking-widest ${voice === v.id ? 'text-black/60' : 'text-white/20'}`}>
+                              {v.desc}
+                            </div>
                           </div>
-                          {voice === v.id && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-colors ${voice === v.id ? 'bg-black/10 border-black/20' : 'bg-white/5 border-white/10'}`}>
+                            {voice === v.id ? <CheckCircle2 className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          </div>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  <button 
-                    onClick={generateNarration}
-                    disabled={isGenerating || !text.trim()}
-                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 text-black font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                        Generating Narration...
-                      </>
-                    ) : (
-                      <>
-                        <Volume2 className="w-5 h-5" />
-                        Generate Narration
-                      </>
-                    )}
-                  </button>
-
-                  {error && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2 text-xs text-red-400">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      {error}
-                    </div>
-                  )}
-
-                  {audioUrl && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="space-y-4 pt-4 border-t border-white/10"
+                  <div className="space-y-6">
+                    <button 
+                      onClick={generateNarration}
+                      disabled={isGenerating || !text.trim()}
+                      className="w-full group relative overflow-hidden py-6 bg-white text-black font-black uppercase tracking-[0.2em] rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-20 disabled:hover:scale-100"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Preview</span>
-                        <a 
-                          href={audioUrl} 
-                          download="narration.mp3"
-                          className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-emerald-500 hover:text-emerald-400"
-                        >
-                          <Download className="w-3 h-3" />
-                          Download MP3
-                        </a>
+                      <div className="relative z-10 flex items-center justify-center gap-3">
+                        {isGenerating ? (
+                          <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Volume2 className="w-5 h-5" />
+                            Cast Voice
+                          </>
+                        )}
                       </div>
-                      <audio ref={audioRef} src={audioUrl} controls className="w-full h-10 invert brightness-150 opacity-80" />
-                    </motion.div>
-                  )}
-                </div>
+                      <div className="absolute inset-0 bg-emerald-500 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                    </button>
 
-                <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-6">
-                  <h3 className="text-sm font-bold text-emerald-500 mb-2">Next Step</h3>
-                  <p className="text-xs text-white/60 leading-relaxed">
-                    Once you have your narration, head over to the <button onClick={() => setActiveTab('instructions')} className="text-emerald-400 hover:underline">Video Script</button> tab to generate your 9:16 short video using our local processor.
-                  </p>
+                    {error && (
+                      <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-sm text-red-400">
+                        <AlertCircle className="w-5 h-5 shrink-0" />
+                        {error}
+                      </div>
+                    )}
+
+                    {audioUrl && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-6"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Master Audio</span>
+                          <a 
+                            href={audioUrl} 
+                            download="narration.mp3"
+                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download
+                          </a>
+                        </div>
+                        <audio ref={audioRef} src={audioUrl} controls className="w-full h-10 invert brightness-200 opacity-60" />
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
           ) : (
             <motion.div 
-              key="instructions"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-3xl mx-auto space-y-8"
+              key="export"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="max-w-4xl mx-auto space-y-24"
             >
-              <div className="space-y-4">
-                <h2 className="text-3xl font-bold tracking-tight">Local Video Processor</h2>
-                <p className="text-white/60 leading-relaxed">
-                  To generate high-quality 9:16 videos with synchronized subtitles, you'll need to run a small Python script locally. This ensures maximum performance and privacy.
-                </p>
+              {/* Step 1: Local Processor */}
+              <div className="grid md:grid-cols-2 gap-16 items-start">
+                <div className="space-y-6">
+                  <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Phase 01</div>
+                  <h2 className="text-5xl font-black tracking-tighter uppercase leading-[0.9]">Local Video Engine</h2>
+                  <p className="text-lg text-white/40 leading-relaxed">
+                    Render cinematic 9:16 videos with synchronized subtitles using our Python-based processing engine.
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest">MoviePy</span>
+                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest">Whisper AI</span>
+                    <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest">H.264</span>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
+                        <Code2 className="w-5 h-5 text-emerald-500" />
+                        Installation
+                      </div>
+                      <div className="bg-black p-4 rounded-xl font-mono text-xs text-emerald-400 group relative">
+                        <code>pip install moviepy openai-whisper torch</code>
+                        <button 
+                          onClick={() => copyToClipboard("pip install moviepy openai-whisper torch")}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Copy className="w-4 h-4 text-white/40 hover:text-white" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
+                        <ArrowRight className="w-5 h-5 text-emerald-500" />
+                        Run Processor
+                      </div>
+                      <p className="text-xs text-white/40">Place <code className="text-white/60">narration.mp3</code> and <code className="text-white/60">cover.jpg</code> in the same folder as <code className="text-white/60">processor.py</code>.</p>
+                      <div className="bg-black p-4 rounded-xl font-mono text-xs text-emerald-400 group relative">
+                        <code>python processor.py</code>
+                        <button 
+                          onClick={() => copyToClipboard("python processor.py")}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Copy className="w-4 h-4 text-white/40 hover:text-white" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-6">
-                <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase tracking-widest text-xs">
-                    <span className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">1</span>
-                    Setup Environment
-                  </div>
-                  <div className="bg-black border border-white/10 rounded-xl p-4 font-mono text-sm group relative">
-                    <button 
-                      onClick={() => copyToClipboard("pip install moviepy openai-whisper torch")}
-                      className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <code className="text-emerald-400">$ pip install moviepy openai-whisper torch</code>
-                  </div>
-                </section>
+              {/* Step 2: Backend Export */}
+              <div className="grid md:grid-cols-2 gap-16 items-start pt-24 border-t border-white/10">
+                <div className="space-y-6">
+                  <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Phase 02</div>
+                  <h2 className="text-5xl font-black tracking-tighter uppercase leading-[0.9]">Cloud Backend</h2>
+                  <p className="text-lg text-white/40 leading-relaxed">
+                    Deploy your own Flask-based API to Vercel for remote narration generation and text sanitization.
+                  </p>
+                  <a 
+                    href="https://vercel.com/new" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-500 hover:underline"
+                  >
+                    Deploy to Vercel <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
 
-                <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase tracking-widest text-xs">
-                    <span className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">2</span>
-                    The Processor Script
-                  </div>
-                  <p className="text-sm text-white/40">Save this as <code className="text-white/60">processor.py</code> in your project folder.</p>
-                  <div className="bg-black border border-white/10 rounded-xl p-4 font-mono text-xs h-64 overflow-y-auto group relative">
-                    <button 
-                      onClick={() => copyToClipboard(`import whisper\nfrom moviepy.editor import *`)}
-                      className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <pre className="text-white/60">
-{`import os
-from moviepy.editor import *
-import whisper
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
+                        <FileText className="w-5 h-5 text-emerald-500" />
+                        main.py (Flask)
+                      </div>
+                      <button 
+                        onClick={() => copyToClipboard("# Flask code here...")}
+                        className="text-[10px] font-bold uppercase tracking-widest text-white/20 hover:text-white"
+                      >
+                        Copy Code
+                      </button>
+                    </div>
+                    <div className="bg-black p-4 rounded-xl font-mono text-[10px] text-white/40 h-40 overflow-y-auto">
+                      <pre>
+{`from flask import Flask, request, send_file
+from gtts import gTTS
+import io
 
-def generate_video(audio_path, image_path, output_path):
-    # Load audio
-    audio = AudioFileClip(audio_path)
-    
-    # Transcribe with Whisper
-    model = whisper.load_model("base")
-    result = model.transcribe(audio_path)
-    
-    # Create 9:16 background
-    bg = ColorClip(size=(1080, 1920), color=(20, 20, 20)).set_duration(audio.duration)
-    
-    # Load and resize image (book cover)
-    img = ImageClip(image_path).set_duration(audio.duration)
-    img = img.resize(width=1000).set_position(('center', 400))
-    
-    clips = [bg, img]
-    
-    # Add Subtitles
-    for segment in result['segments']:
-        txt = TextClip(
-            segment['text'].strip(),
-            fontsize=70,
-            color='white',
-            font='Arial-Bold',
-            method='caption',
-            size=(900, None)
-        ).set_start(segment['start']).set_end(segment['end']).set_position(('center', 1400))
-        clips.append(txt)
-    
-    video = CompositeVideoClip(clips, size=(1080, 1920))
-    video.audio = audio
-    video.write_videofile(output_path, fps=24, codec='libx264')
+app = Flask(__name__)
 
-if __name__ == "__main__":
-    generate_video("narration.mp3", "cover.jpg", "output.mp4")`}
-                    </pre>
+@app.route('/api/generate', methods=['POST'])
+def generate():
+    data = request.json
+    tts = gTTS(text=data['text'], lang='pt', tld='com.br')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    return send_file(fp, mimetype='audio/mpeg')`}
+                      </pre>
+                    </div>
                   </div>
-                </section>
-
-                <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase tracking-widest text-xs">
-                    <span className="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">3</span>
-                    Run Processing
-                  </div>
-                  <p className="text-sm text-white/40">Place your <code className="text-white/60">narration.mp3</code> and a <code className="text-white/60">cover.jpg</code> in the same folder and run:</p>
-                  <div className="bg-black border border-white/10 rounded-xl p-4 font-mono text-sm group relative">
-                    <button 
-                      onClick={() => copyToClipboard("python processor.py")}
-                      className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <code className="text-emerald-400">$ python processor.py</code>
-                  </div>
-                </section>
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      {/* Footer */}
-      <footer className="max-w-6xl mx-auto px-6 py-12 border-t border-white/5 text-center">
-        <p className="text-xs text-white/20 uppercase tracking-[0.2em]">
-          Powered by Gemini 2.5 Flash & Whisper AI
-        </p>
+      <footer className="max-w-7xl mx-auto px-6 py-32 border-t border-white/10">
+        <div className="grid md:grid-cols-2 gap-12 items-end">
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black uppercase tracking-tighter">Lumina Ecosystem</h2>
+            <p className="max-w-xs text-xs text-white/20 leading-relaxed uppercase tracking-widest">
+              A complete toolchain for modern content creators. Built with precision and powered by the frontier of artificial intelligence.
+            </p>
+          </div>
+          <div className="text-right space-y-2">
+            <div className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20">© 2026 Lumina AI</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/40">All Rights Reserved</div>
+          </div>
+        </div>
       </footer>
     </div>
   );
