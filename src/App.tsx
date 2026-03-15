@@ -18,7 +18,11 @@ import {
   ExternalLink,
   Code2,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  HelpCircle,
+  Zap,
+  Layers,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -47,8 +51,9 @@ export default function App() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [bgMusicUrl, setBgMusicUrl] = useState<string>('');
   const [bgVolume, setBgVolume] = useState(0.2);
+  const [speechRate, setSpeechRate] = useState(1.0);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'editor' | 'export'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'export' | 'manual'>('editor');
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const bgMusicRef = useRef<HTMLAudioElement>(null);
@@ -99,9 +104,15 @@ export default function App() {
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      
+      let speedInstruction = "velocidade normal";
+      if (speechRate > 1.2) speedInstruction = "velocidade rápida";
+      if (speechRate < 0.8) speedInstruction = "velocidade lenta";
+      if (speechRate >= 0.8 && speechRate <= 1.2 && speechRate !== 1.0) speedInstruction = `velocidade levemente ${speechRate > 1.0 ? 'mais rápida' : 'mais lenta'}`;
+
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: `Narre este trecho de livro com um tom profissional: ${text}` }] }],
+        contents: [{ parts: [{ text: `Narre este trecho de livro com um tom profissional e em ${speedInstruction}: ${text}` }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -187,6 +198,13 @@ export default function App() {
               02. Exportar e Criar
               {activeTab === 'export' && <motion.div layoutId="nav-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />}
             </button>
+            <button 
+              onClick={() => setActiveTab('manual')}
+              className={`text-sm font-bold uppercase tracking-widest transition-all relative py-2 ${activeTab === 'manual' ? 'text-white' : 'text-white/30 hover:text-white/60'}`}
+            >
+              03. Manual
+              {activeTab === 'manual' && <motion.div layoutId="nav-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />}
+            </button>
           </div>
           
           <div className="hidden md:flex items-center gap-4 text-[10px] font-bold text-white/20 uppercase tracking-widest">
@@ -260,6 +278,27 @@ export default function App() {
                           </div>
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/30">Velocidade da Voz</h3>
+                      <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md">{speechRate.toFixed(1)}x</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0.5" 
+                      max="2.0" 
+                      step="0.1" 
+                      value={speechRate}
+                      onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
+                      className="w-full h-1 bg-white/5 rounded-full appearance-none accent-emerald-500 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-white/20">
+                      <span>Lento</span>
+                      <span>Normal</span>
+                      <span>Rápido</span>
                     </div>
                   </div>
 
@@ -390,7 +429,7 @@ export default function App() {
                 </div>
               </div>
             </motion.div>
-          ) : (
+          ) : activeTab === 'export' ? (
             <motion.div 
               key="export"
               initial={{ opacity: 0, x: 20 }}
@@ -518,6 +557,110 @@ def generate():
     fp.seek(0)
     return send_file(fp, mimetype='audio/mpeg')`}
                       </pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="manual"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-5xl mx-auto space-y-32"
+            >
+              {/* Manual Header */}
+              <div className="text-center space-y-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">
+                  Guia de Utilização
+                </div>
+                <h2 className="text-7xl font-black tracking-tighter uppercase leading-none">
+                  Como eu <span className="text-emerald-500">funciono?</span>
+                </h2>
+                <p className="max-w-2xl mx-auto text-xl text-white/40 leading-relaxed">
+                  Lumina não é apenas uma ferramenta de áudio. É um ecossistema completo desenhado para transformar textos estáticos em experiências cinematográficas para redes sociais.
+                </p>
+              </div>
+
+              {/* Workflow Steps */}
+              <div className="grid md:grid-cols-3 gap-12">
+                <div className="space-y-6 p-8 bg-white/2 border border-white/5 rounded-3xl hover:border-emerald-500/30 transition-colors group">
+                  <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-black shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-bold uppercase tracking-tighter">01. O Manuscrito</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">
+                    Você insere o texto bruto (de um PDF ou livro). Nossa ferramenta de "Sanitize" limpa automaticamente quebras de linha e caracteres especiais, preparando o texto para uma leitura fluida.
+                  </p>
+                </div>
+
+                <div className="space-y-6 p-8 bg-white/2 border border-white/5 rounded-3xl hover:border-emerald-500/30 transition-colors group">
+                  <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-black shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                    <Volume2 className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-bold uppercase tracking-tighter">02. Alquimia de Voz</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">
+                    Utilizamos modelos de IA de última geração (Gemini 2.5 Flash) para gerar narrações humanas. Você pode escolher entre diferentes timbres e adicionar trilhas sonoras que se misturam perfeitamente.
+                  </p>
+                </div>
+
+                <div className="space-y-6 p-8 bg-white/2 border border-white/5 rounded-3xl hover:border-emerald-500/30 transition-colors group">
+                  <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-black shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                    <Zap className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl font-bold uppercase tracking-tighter">03. Renderização</h3>
+                  <p className="text-sm text-white/40 leading-relaxed">
+                    Com o áudio pronto, você usa nosso motor local (Python + MoviePy) para gerar o vídeo final em 9:16, com legendas automáticas sincronizadas via Whisper AI.
+                  </p>
+                </div>
+              </div>
+
+              {/* Value Proposition */}
+              <div className="bg-emerald-500 rounded-[3rem] p-12 md:p-20 text-black overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-12 opacity-10">
+                  <ShieldCheck className="w-64 h-64" />
+                </div>
+                <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+                  <div className="space-y-8">
+                    <h2 className="text-5xl md:text-6xl font-black tracking-tighter uppercase leading-[0.9]">
+                      Por que usar o Lumina?
+                    </h2>
+                    <ul className="space-y-6">
+                      <li className="flex items-start gap-4">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        </div>
+                        <p className="font-bold leading-tight">Economia de horas de edição manual de áudio e vídeo.</p>
+                      </li>
+                      <li className="flex items-start gap-4">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        </div>
+                        <p className="font-bold leading-tight">Narrações profissionais sem precisar de microfones ou estúdio.</p>
+                      </li>
+                      <li className="flex items-start gap-4">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-black flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        </div>
+                        <p className="font-bold leading-tight">Legendas automáticas precisas para maior retenção no TikTok/Reels.</p>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="bg-black/10 backdrop-blur-md border border-black/10 rounded-3xl p-8 space-y-6">
+                    <div className="flex items-center gap-3">
+                      <Layers className="w-6 h-6" />
+                      <span className="text-xs font-black uppercase tracking-widest">O que eu faço realmente?</span>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed">
+                      Eu facilito sua vida automatizando a parte técnica e chata da criação de conteúdo. Eu pego um texto que você achou interessante e entrego um áudio masterizado e as ferramentas para gerar um vídeo viral em minutos, não horas.
+                    </p>
+                    <div className="pt-4 border-t border-black/10 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest">Status do Sistema</span>
+                      <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+                        <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
+                        Operacional
+                      </span>
                     </div>
                   </div>
                 </div>
